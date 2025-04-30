@@ -188,8 +188,9 @@ public class Sound {
 
             // looking at the schematic, the 4-bit volume parameter is applied to the enable lines of 4 analogue switches
             // (the input of each switch is from a weighted resistor network) so it's an & rather than a multiply
-            int output = sample & volume[voice];
             
+            int output = (sample * volume[voice]) / 30; // Used multiply instead of & operator since the real Pac-Man doesn't use AND operation
+
             // maximise volume of 4-bit samples for output
             return output<<=3;
         }
@@ -242,9 +243,10 @@ public class Sound {
             int[] sample = new int[SAMPLES_PER_WAVEFORMS];
             int offset = sampleNumber*SAMPLES_PER_WAVEFORMS;
                         
-            for(int i=0;i<WAVEFORMS;i++)
+            for(int i=0;i<SAMPLES_PER_WAVEFORMS;i++)
             {
-                sample[i]=rom.readByte(i+offset);
+//                sample[i]=rom.readByte(i+offset);
+            	 sample[i] = rom.readByte(i + offset) & 0x0F;
             }
 
             return sample;
@@ -298,8 +300,13 @@ public class Sound {
             // mix the three channels together
             for(int i=0;i<frameSize;i++)
             {
-                int mix = voice1[i]+voice2[i]+voice3[i];
-                output[i]=(byte)(mix/2);
+            	int mix = (voice1[i] & 0xFF) + (voice2[i] & 0xFF) + (voice3[i] & 0xFF);
+
+            	// Simple saturation/clamp
+            	if (mix > 255) mix = 255;
+            	if (mix < 0) mix = 0;
+
+            	output[i] = (byte)mix;
             }
             return output;
         }      
